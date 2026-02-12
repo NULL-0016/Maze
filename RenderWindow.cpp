@@ -12,7 +12,63 @@ bool RenderWindow::Initialize(HINSTANCE hInstance, std::string w_title, std::str
 
 	this->RegisterWindowClass();
 
-	return false;
+	this->handle = CreateWindowEx(0,
+		this->window_class_wide.c_str(),
+		this->window_title_wide.c_str(),
+		WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+		0,
+		0,
+		this->width,
+		this->height,
+		NULL,
+		NULL,
+		this->hInstance,
+		nullptr);
+
+	if (this->handle == NULL)
+	{
+		ErrorLogger::Log(GetLastError(), "CreateWindowEx failed for window >> " + this->window_title);
+		return false;
+	}
+
+	ShowWindow(this->handle, SW_SHOW);
+	SetForegroundWindow(this->handle);
+	SetFocus(this->handle);
+
+	return true;
+}
+
+bool RenderWindow::ProcessMessages()
+{
+	MSG msg;
+	ZeroMemory(&msg, sizeof(MSG));
+
+	if (PeekMessage(&msg, this->handle, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	if (msg.message == WM_NULL)
+	{
+		if (!IsWindow(this->handle))
+		{
+			this->handle = NULL;
+			UnregisterClass(this->window_class_wide.c_str(), this->hInstance);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+RenderWindow::~RenderWindow()
+{
+	if (this->handle != NULL)
+	{
+		UnregisterClass(this->window_class_wide.c_str(), hInstance);
+		DestroyWindow(this->handle);
+	}
 }
 
 void RenderWindow::RegisterWindowClass()
